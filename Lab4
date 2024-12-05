@@ -1,0 +1,69 @@
+import arcpy
+import os
+
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
+### >>>>>> Add your code here
+INPUT_DB_PATH = r"C:\Users\dgzz2202\DG-GEOG392-LAB\Labs\Lab4\data\Campus.gdb"
+CSV_PATH = r"C:\Users\dgzz2202\DG-GEOG392-LAB\Labs\Lab4\data\garages.csv"
+OUTPUT_DB_PATH = r"C:\Users\dgzz2202\DG-GEOG392-LAB\Labs\Lab4\data\Lab4.gdb"
+### <<<<<< End of your code here
+
+arcpy.env.workspace = INPUT_DB_PATH
+
+# Layers need to be kept
+layers_to_keep = ["GaragePoints", "LandUse", "Structures", "Trees"]
+
+# list all feature clases
+feature_classes = arcpy.ListFeatureClasses()
+
+# delete other classes
+for fc in feature_classes:
+    if fc not in layers_to_keep:
+        arcpy.management.Delete(fc)
+
+# create GDB management
+if not os.path.exists(OUTPUT_DB_PATH):
+    ### >>>>>> Add your code here
+    arcpy.management.CreateFileGDB(r"C:\Users\dgzz2202\DG-GEOG392-LAB\Labs\Lab4\data", "Lab4.gdb")
+    ### <<<<<< End of your code here
+
+# Load .csv file to input GDB
+### >>>>>> Add your code here
+    garage_fc = cs.path.join(INPUT_DB_PATH, "garages")
+    arcpy.management.XYTableToPoint(CSV_PATH, garage_fc, "x", "y")
+### <<<<<< End of your code here
+
+# Print spatial references before re-projection
+print(f"Before Re-Projection...")
+print(f"garages layer spatial reference: {arcpy.Describe('garages').spatialReference.name}.")
+print(f"Structures layer spatial reference: {arcpy.Describe('Structures').spatialReference.name}.")
+
+# Re-project
+## >>>>>>>>> change the codes below
+target_ref = arcpy.SpatialReference("4326")
+arcpy.management.Project(
+   "Structures",
+   "structures_projected",
+   target_ref
+)
+## <<<<<<<< End of your code here
+# print spatial references after re-projection
+print(f"After Re-Projection...")
+print(f"garages layer spatial reference: {arcpy.Describe('garages').spatialReference.name}.")
+print(f"re-projected Structures layer spatial reference: {arcpy.Describe('structures_projected').spatialReference.name}")
+
+### >>>>>> Add your code here
+# Buffer analysis
+radiumStr = "150 meter"
+arcpy.analysis.Buffer("garages", "garages_buffered", radiumStr)
+
+# Intersect analysis
+arcpy.analysis.Intersect(["garages_buffered", "Structures"], "intersection", "ALL")
+# Output features to the created GDB
+arcpy.management.CopyFeatures("garages", os.path.join(OUTPUT_DB_PATH, "garages"))
+arcpy.management.CopyFeatures("garages_buffered", os.path.join(OUTPUT_DB_PATH, "garages_buffered"))
+arcpy.management.CopyFeatures("intersection", os.path.join(OUTPUT_DB_PATH, "intersection"))
+arcpy.management.CopyFeatures("structures_projected", os.path.join(OUTPUT_DB_PATH, "structures_projected"))
+
+### <<<<<< End of your code here
